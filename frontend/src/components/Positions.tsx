@@ -1,20 +1,43 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { Card, Container, Row, Col, Form, Button } from 'react-bootstrap';
+import { useNavigate } from 'react-router-dom';
+import { getAllPositions } from '../services/positionService';
 
 type Position = {
+    id: number;
     title: string;
-    manager: string;
-    deadline: string;
-    status: 'Abierto' | 'Contratado' | 'Cerrado' | 'Borrador';
+    status: string;
+    location: string;
+    applicationDeadline: string;
+    companyId: number;
+    interviewFlowId: number;
+    manager?: string;
 };
 
-const mockPositions: Position[] = [
-    { title: 'Senior Backend Engineer', manager: 'John Doe', deadline: '2024-12-31', status: 'Abierto' },
-    { title: 'Junior Android Engineer', manager: 'Jane Smith', deadline: '2024-11-15', status: 'Contratado' },
-    { title: 'Product Manager', manager: 'Alex Jones', deadline: '2024-07-31', status: 'Borrador' }
-];
-
 const Positions: React.FC = () => {
+    const [positions, setPositions] = useState<Position[]>([]);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState<string | null>(null);
+    const navigate = useNavigate();
+
+    useEffect(() => {
+        const fetchPositions = async () => {
+            try {
+                const data = await getAllPositions();
+                setPositions(data);
+                setLoading(false);
+            } catch (err) {
+                setError('Error loading positions');
+                setLoading(false);
+            }
+        };
+
+        fetchPositions();
+    }, []);
+
+    if (loading) return <div>Loading...</div>;
+    if (error) return <div>Error: {error}</div>;
+
     return (
         <Container className="mt-5">
             <h2 className="text-center mb-4">Posiciones</h2>
@@ -44,20 +67,25 @@ const Positions: React.FC = () => {
                 </Col>
             </Row>
             <Row>
-                {mockPositions.map((position, index) => (
-                    <Col md={4} key={index} className="mb-4">
+                {positions.map((position) => (
+                    <Col md={4} key={position.id} className="mb-4">
                         <Card className="shadow-sm">
                             <Card.Body>
                                 <Card.Title>{position.title}</Card.Title>
                                 <Card.Text>
-                                    <strong>Manager:</strong> {position.manager}<br />
-                                    <strong>Deadline:</strong> {position.deadline}
+                                    <strong>Manager:</strong> {position.manager || 'No asignado'}<br />
+                                    <strong>Deadline:</strong> {new Date(position.applicationDeadline).toLocaleDateString()}
                                 </Card.Text>
                                 <span className={`badge ${position.status === 'Abierto' ? 'bg-warning' : position.status === 'Contratado' ? 'bg-success' : position.status === 'Borrador' ? 'bg-secondary' : 'bg-warning'} text-white`}>
                                     {position.status}
                                 </span>
                                 <div className="d-flex justify-content-between mt-3">
-                                    <Button variant="primary">Ver proceso</Button>
+                                    <Button 
+                                        variant="primary"
+                                        onClick={() => navigate(`/position/${position.id}`)}
+                                    >
+                                        Ver proceso
+                                    </Button>
                                     <Button variant="secondary">Editar</Button>
                                 </div>
                             </Card.Body>
